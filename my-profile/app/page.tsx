@@ -1,28 +1,26 @@
 "use client"
 
-import { useState } from "react"
-import { AddLinkDialog, LinkItem } from "@/components/AddLinkDialog"
+import { useState, useEffect } from "react"
+import { collection, onSnapshot, query, orderBy } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import { LinkItem } from "@/components/AddLinkDialog"
 import { LinkList } from "@/components/LinkList"
 
 export default function Home() {
-  const [links, setLinks] = useState<LinkItem[]>([
-    {
-      id: "demo-1",
-      title: "GitHub 프로필",
-      url: "https://github.com",
-      isVisible: true,
-    },
-    {
-      id: "demo-2",
-      title: "기술 블로그 (Velog)",
-      url: "https://velog.io",
-      isVisible: true,
-    }
-  ])
+  const [links, setLinks] = useState<LinkItem[]>([])
 
-  const handleAddLink = (newLink: LinkItem) => {
-    setLinks((prevLinks) => [...prevLinks, newLink])
-  }
+  useEffect(() => {
+    const q = query(collection(db, "user", "anonymous", "links"), orderBy("createdAt", "asc"))
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedLinks: LinkItem[] = []
+      snapshot.forEach((doc) => {
+        fetchedLinks.push({ id: doc.id, ...doc.data() } as LinkItem)
+      })
+      setLinks(fetchedLinks)
+    })
+
+    return () => unsubscribe()
+  }, [])
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-zinc-50 dark:bg-zinc-950 sm:py-12">
@@ -48,10 +46,7 @@ export default function Home() {
           <LinkList links={links} />
         </div>
 
-        {/* Admin Action Button (Fixed Bottom) */}
-        <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-white via-white to-transparent dark:from-zinc-900 dark:via-zinc-900 pt-12">
-          <AddLinkDialog onAddLink={handleAddLink} />
-        </div>
+
       </div>
     </main>
   )
