@@ -2,16 +2,20 @@
 
 import { useState, useEffect } from "react"
 import { signInWithPopup, signOut } from "firebase/auth"
-import { collection, addDoc, onSnapshot, query, orderBy } from "firebase/firestore"
+import { collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc } from "firebase/firestore"
 
 import { auth, googleProvider, db } from "@/lib/firebase"
 import { useAuth } from "@/components/AuthProvider"
 import { LinkList } from "@/components/LinkList"
 import { LinkItem, AddLinkDialog } from "@/components/AddLinkDialog"
+import { EditLinkDialog } from "@/components/EditLinkDialog"
+import { ProfileEditDialog } from "@/components/ProfileEditDialog"
 import { Button } from "@/components/ui/button"
 
 export default function MyPage() {
   const [links, setLinks] = useState<LinkItem[]>([])
+  const [editingLink, setEditingLink] = useState<LinkItem | null>(null)
+  const [profile, setProfile] = useState<{ displayName: string } | null>(null)
   const { user, loading } = useAuth()
 
   useEffect(() => {
@@ -20,8 +24,8 @@ export default function MyPage() {
       return
     }
 
-    const q = query(collection(db, "user", "anonymous", "links"), orderBy("createdAt", "asc"))
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const q = query(collection(db, "users", user.uid, "links"), orderBy("createdAt", "asc"))
+    const unsubscribeLinks = onSnapshot(q, (snapshot) => {
       const fetchedLinks: LinkItem[] = []
       snapshot.forEach((doc) => {
         fetchedLinks.push({ id: doc.id, ...doc.data() } as LinkItem)
@@ -29,7 +33,18 @@ export default function MyPage() {
       setLinks(fetchedLinks)
     })
 
-    return () => unsubscribe()
+    const unsubscribeProfile = onSnapshot(doc(db, "users", user.uid), (docSnap) => {
+      if (docSnap.exists()) {
+        setProfile(docSnap.data() as { displayName: string })
+      } else {
+        setProfile({ displayName: "" })
+      }
+    })
+
+    return () => {
+      unsubscribeLinks()
+      unsubscribeProfile()
+    }
   }, [user])
 
   const handleLogin = async () => {
@@ -45,6 +60,37 @@ export default function MyPage() {
       await signOut(auth)
     } catch (error) {
       console.error("Logout failed:", error)
+    }
+  }
+
+  const handleEditSave = async (id: string, newTitle: string, newUrl: string) => {
+    if (!user) return
+    try {
+      const linkRef = doc(db, "users", user.uid, "links", id)
+      const now = new Date().getTime()
+      await updateDoc(linkRef, {
+        title: newTitle,
+        url: newUrl,
+        updatedAt: now
+      })
+      console.log(`[Edit] 링크 수정 성공 - ID: ${id}, updatedAt: ${new Date(now).toLocaleString()}`)
+    } catch (error) {
+      console.error("Error updating document:", error)
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!user) return
+    if (!window.confirm("정말 이 링크를 삭제하시겠습니까?")) return
+    try {
+      // 화면에서 즉시 사라지게 로컬 상태 먼저 업데이트 (선택적 최적화)
+      setLinks((prev) => prev.filter(link => link.id !== id))
+      
+      // Firebase에서 실제 문서 영구 삭제 (Hard Delete)
+      await deleteDoc(doc(db, "users", user.uid, "links", id))
+      console.log(`[Delete] 링크 완전 삭제(Hard Delete) 성공 - ID: ${id}, deletedAt: ${new Date().toLocaleString()}`)
+    } catch (error) {
+      console.error("Error deleting document:", error)
     }
   }
 
@@ -85,26 +131,52 @@ export default function MyPage() {
         {/* 상단 : 내 링크 관리 제목 및 유저 정보 */}
         <header className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+            <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 flex items-center gap-4">
               내 링크 관리
+              {profile && (
+                <ProfileEditDialog 
+                  uid={user.uid} 
+                  currentDisplayName={profile.displayName} 
+                />
+              )}
             </h1>
             <p className="text-muted-foreground mt-2">
-              반갑습니다, <span className="font-semibold text-foreground">{user.displayName || user.email}</span>님!
+              반갑습니다, <span className="font-semibold text-foreground">{profile?.displayName || user.displayName || user.email}</span>님!
             </p>
           </div>
           <Button variant="outline" onClick={handleLogout} className="shadow-sm">로그아웃</Button>
         </header>
 
+        {/* 내 고유 공유 주소 안내 */}
+        <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold text-primary">내 프로필 공유 주소</p>
+            <a href={`/${profile?.displayName || user.uid}`} target="_blank" rel="noopener noreferrer" className="text-xs text-primary/80 hover:underline">
+              {typeof window !== "undefined" ? window.location.origin : ""}/{profile?.displayName || user.uid}
+            </a>
+          </div>
+          <Button variant="secondary" size="sm" onClick={() => {
+            navigator.clipboard.writeText(`${window.location.origin}/${profile?.displayName || user.uid}`)
+            alert("주소가 복사되었습니다!")
+          }}>
+            복사하기
+          </Button>
+        </div>
+
         {/* 중간 : 링크 추가 폼 (다이얼로그) */}
         <section className="flex justify-center my-2">
           <AddLinkDialog onAddLink={async (newLink) => {
+            if (!user) return
             try {
-              await addDoc(collection(db, "user", "anonymous", "links"), {
+              const now = new Date().getTime()
+              const docRef = await addDoc(collection(db, "users", user.uid, "links"), {
                 title: newLink.title,
                 url: newLink.url,
                 isVisible: newLink.isVisible,
-                createdAt: new Date().getTime(),
+                createdAt: now,
+                updatedAt: now,
               })
+              console.log(`[Add] 링크 추가 성공 - ID: ${docRef.id}, createdAt: ${new Date(now).toLocaleString()}`)
             } catch (error) {
               console.error("Error adding document: ", error)
             }
@@ -115,9 +187,23 @@ export default function MyPage() {
         <section>
           <h2 className="text-xl font-bold mb-4 px-1">등록된 링크</h2>
           <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl shadow-sm border border-border min-h-[300px]">
-            <LinkList links={links} />
+            <LinkList 
+              links={links} 
+              isAdmin={true} 
+              onEdit={(link) => setEditingLink(link)} 
+              onDelete={handleDelete} 
+            />
           </div>
         </section>
+        
+        {/* 수정 다이얼로그 */}
+        <EditLinkDialog 
+          isOpen={!!editingLink} 
+          onClose={() => setEditingLink(null)} 
+          initialData={editingLink} 
+          onSave={handleEditSave} 
+        />
+        
         
       </div>
     </main>

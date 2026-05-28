@@ -1,52 +1,76 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { collection, onSnapshot, query, orderBy } from "firebase/firestore"
-import { db } from "@/lib/firebase"
-import { LinkItem } from "@/components/AddLinkDialog"
-import { LinkList } from "@/components/LinkList"
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { signInWithPopup } from "firebase/auth"
+import { auth, googleProvider } from "@/lib/firebase"
+import { useAuth } from "@/components/AuthProvider"
 
-export default function Home() {
-  const [links, setLinks] = useState<LinkItem[]>([])
+export default function LandingPage() {
+  const { user, loading } = useAuth()
+  const router = useRouter()
 
   useEffect(() => {
-    const q = query(collection(db, "user", "anonymous", "links"), orderBy("createdAt", "asc"))
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedLinks: LinkItem[] = []
-      snapshot.forEach((doc) => {
-        fetchedLinks.push({ id: doc.id, ...doc.data() } as LinkItem)
-      })
-      setLinks(fetchedLinks)
-    })
+    // 이미 로그인되어 있으면 바로 mypage로 이동
+    if (user) {
+      router.push("/mypage")
+    }
+  }, [user, router])
 
-    return () => unsubscribe()
-  }, [])
+  const handleGoogleLogin = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider)
+      // signInWithPopup 성공 시 auth state가 변경되어 useEffect가 /mypage로 보냅니다.
+    } catch (error) {
+      console.error("Login failed:", error)
+    }
+  }
+
+  // 로그인 상태 확인 중일 때는 아무것도 렌더링하지 않음 (깜빡임 방지)
+  if (loading || user) return null
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-zinc-50 dark:bg-zinc-950 sm:py-12">
-      <div className="w-full max-w-[480px] min-h-[800px] bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-2xl overflow-hidden relative border-[8px] border-zinc-200 dark:border-zinc-800 flex flex-col">
+    <main className="relative flex min-h-screen flex-col items-center justify-center p-4 bg-[#FFD700] overflow-hidden">
+      
+      {/* 8-bit 스타일 배경 장식 (격자 무늬 등 선택적 구현) */}
+      <div className="absolute inset-0 opacity-10" style={{
+        backgroundImage: 'linear-gradient(#000 2px, transparent 2px), linear-gradient(90deg, #000 2px, transparent 2px)',
+        backgroundSize: '32px 32px'
+      }} />
+
+      {/* 우상단 Mylink (검은색, 클릭 시 초기 화면) */}
+      <a 
+        href="/" 
+        className="absolute top-6 right-6 font-pixel text-black text-3xl font-bold z-10 hover:scale-105 active:scale-95 transition-transform"
+      >
+        Mylink
+      </a>
+
+      {/* 메인 텍스트 컨테이너 */}
+      <div className="text-center z-10 flex flex-col items-center">
+        {/* 메인 카피: Mylink에 오신걸 환영합니다 */}
+        <h1 
+          className="font-pixel text-4xl sm:text-5xl text-white mb-6 leading-tight tracking-widest"
+          style={{ textShadow: '4px 4px 0px #000, -2px -2px 0px #000, 2px -2px 0px #000, -2px 2px 0px #000, 2px 2px 0px #000' }}
+        >
+          Mylink에 오신걸<br/>환영합니다
+        </h1>
         
-        {/* Profile Header */}
-        <div className="flex flex-col items-center mt-12 px-6">
-          <div className="w-24 h-24 rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden mb-4 border-4 border-white dark:border-zinc-700 shadow-lg">
-            <img 
-              src="https://api.dicebear.com/9.x/notionists/svg?seed=Felix" 
-              alt="Profile" 
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">@developer</h1>
-          <p className="text-zinc-500 dark:text-zinc-400 text-center mt-2 text-sm">
-            Frontend Engineer | Open Source Contributor
-          </p>
-        </div>
-
-        {/* Links Section */}
-        <div className="flex-1 px-6 pb-24 overflow-y-auto mt-6 no-scrollbar">
-          <LinkList links={links} />
-        </div>
-
-
+        {/* 서브 카피: 로그인 후 다양한 링크 등록하세요 (메인의 50% 크기) */}
+        <p 
+          className="font-pixel text-xl sm:text-2xl text-black mb-12"
+          style={{ textShadow: '2px 2px 0px rgba(255,255,255,1)' }}
+        >
+          로그인 후 다양한 링크 등록하세요
+        </p>
+        
+        {/* 구글 로그인 버튼 (8-bit 레트로 스타일) */}
+        <button 
+          onClick={handleGoogleLogin}
+          className="font-pixel bg-[#FF0000] text-white text-xl sm:text-2xl py-4 px-8 border-4 border-black shadow-[6px_6px_0_0_#000] hover:translate-y-[2px] hover:translate-x-[2px] hover:shadow-[4px_4px_0_0_#000] active:translate-y-[6px] active:translate-x-[6px] active:shadow-none transition-all"
+        >
+          Google로 시작하기
+        </button>
       </div>
     </main>
   )
