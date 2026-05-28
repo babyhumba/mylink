@@ -127,25 +127,25 @@ export function ProfileEditDialog({ uid, currentDisplayName, onProfileUpdated }:
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">프로필 수정</Button>
+        <Button variant="outline" size="sm" className="font-pixel border-4 border-black shadow-[4px_4px_0_0_#000] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[6px_6px_0_0_#000] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all rounded-none text-black hover:bg-zinc-200">프로필 수정</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] font-pixel border-4 border-black shadow-[8px_8px_0_0_#000] bg-[#FFD700] rounded-none">
         <DialogHeader>
-          <DialogTitle>프로필 수정</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-2xl text-black">프로필 수정</DialogTitle>
+          <DialogDescription className="text-black text-sm">
             공유 링크의 주소로 사용될 나만의 닉네임을 설정하세요.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="display-name">공유 주소 아이디 (닉네임)</Label>
+            <Label htmlFor="display-name" className="text-black">공유 주소 아이디 (닉네임)</Label>
             <div className="flex items-center gap-2">
               <Input
                 id="display-name"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="예: developer_kr"
-                className="flex-1"
+                className="flex-1 border-4 border-black shadow-[2px_2px_0_0_#000] rounded-none font-pixel bg-white text-black h-12"
                 autoComplete="off"
               />
               <Button 
@@ -153,16 +153,17 @@ export function ProfileEditDialog({ uid, currentDisplayName, onProfileUpdated }:
                 variant="secondary" 
                 onClick={checkDuplicate}
                 disabled={isChecking || displayName.trim() === currentDisplayName}
+                className="font-pixel border-4 border-black shadow-[2px_2px_0_0_#000] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all rounded-none h-12 bg-white text-black hover:bg-zinc-200 disabled:opacity-50"
               >
                 {isChecking ? "확인 중..." : "중복 확인"}
               </Button>
             </div>
             {errorMsg && (
-              <p className={`text-sm mt-1 ${isAvailable ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
+              <p className={`text-sm mt-1 font-bold ${isAvailable ? 'text-green-700' : 'text-red-600'}`}>
                 {errorMsg}
               </p>
             )}
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs text-black mt-1">
               영문, 숫자, 하이픈(-), 언더스코어(_)만 허용됩니다.
             </p>
           </div>
@@ -171,6 +172,7 @@ export function ProfileEditDialog({ uid, currentDisplayName, onProfileUpdated }:
           <Button 
             onClick={handleSave} 
             disabled={!isAvailable || isSaving}
+            className="font-pixel text-lg border-4 border-black shadow-[4px_4px_0_0_#000] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[6px_6px_0_0_#000] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all rounded-none bg-[#0000FF] text-white disabled:opacity-50"
           >
             {isSaving ? "저장 중..." : "저장하기"}
           </Button>

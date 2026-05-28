@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { signInWithPopup, signOut } from "firebase/auth"
 import { collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc } from "firebase/firestore"
 
@@ -17,6 +18,13 @@ export default function MyPage() {
   const [editingLink, setEditingLink] = useState<LinkItem | null>(null)
   const [profile, setProfile] = useState<{ displayName: string } | null>(null)
   const { user, loading } = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/")
+    }
+  }, [user, loading, router])
 
   useEffect(() => {
     if (!user) {
@@ -46,14 +54,6 @@ export default function MyPage() {
       unsubscribeProfile()
     }
   }, [user])
-
-  const handleLogin = async () => {
-    try {
-      await signInWithPopup(auth, googleProvider)
-    } catch (error) {
-      console.error("Login failed:", error)
-    }
-  }
 
   const handleLogout = async () => {
     try {
@@ -96,69 +96,63 @@ export default function MyPage() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950">
-        <p className="text-muted-foreground animate-pulse">인증 정보를 불러오는 중입니다...</p>
+      <main className="flex min-h-screen items-center justify-center bg-[#00FFFF]">
+        <p className="font-pixel text-2xl text-black animate-pulse bg-white border-4 border-black p-4 shadow-[4px_4px_0_0_#000]">
+          로딩 중...
+        </p>
       </main>
     )
   }
 
   if (!user) {
-    return (
-      <main className="flex min-h-screen flex-col items-center justify-center py-10 bg-zinc-50 dark:bg-zinc-950">
-        <div className="flex flex-col items-center gap-6 max-w-sm text-center">
-          <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center shadow-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
-              <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/>
-              <path d="M9 18c-4.51 2-5-2-7-2"/>
-            </svg>
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 mb-2">관리자 로그인</h1>
-            <p className="text-muted-foreground text-sm">프로필 페이지에 노출할 링크를 관리하려면 Google 계정으로 로그인해 주세요.</p>
-          </div>
-          <Button onClick={handleLogin} className="w-full h-12 text-base shadow-md">
-            Google 계정으로 로그인
-          </Button>
-        </div>
-      </main>
-    )
+    return null
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center py-10 bg-zinc-50 dark:bg-zinc-950">
-      <div className="w-full max-w-2xl px-6 flex flex-col gap-8">
+    <main className="flex min-h-screen flex-col items-center py-10 bg-[#00FFFF] relative overflow-hidden">
+      {/* 8-bit 배경 패턴 */}
+      <div className="absolute inset-0 opacity-20 pointer-events-none" style={{
+        backgroundImage: 'linear-gradient(#000 2px, transparent 2px), linear-gradient(90deg, #000 2px, transparent 2px)',
+        backgroundSize: '32px 32px'
+      }} />
+
+      <div className="w-full max-w-2xl px-6 flex flex-col gap-8 z-10">
         
         {/* 상단 : 내 링크 관리 제목 및 유저 정보 */}
-        <header className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 flex items-center gap-4">
-              내 링크 관리
+        <header className="flex flex-col sm:flex-row items-center justify-between bg-[#FFD700] border-4 border-black p-6 shadow-[8px_8px_0_0_#000] gap-4">
+          <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <h1 className="font-pixel text-4xl sm:text-5xl font-bold tracking-tight text-black" style={{ textShadow: '2px 2px 0px #FFF' }}>
+                내 링크 관리
+              </h1>
               {profile && (
                 <ProfileEditDialog 
                   uid={user.uid} 
                   currentDisplayName={profile.displayName} 
                 />
               )}
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              반갑습니다, <span className="font-semibold text-foreground">{profile?.displayName || user.displayName || user.email}</span>님!
+            </div>
+            <p className="font-pixel text-black mt-3 text-lg sm:text-xl">
+              반갑습니다, <span className="font-bold">{profile?.displayName || user.displayName || user.email}</span>님!
             </p>
           </div>
-          <Button variant="outline" onClick={handleLogout} className="shadow-sm">로그아웃</Button>
+          <Button variant="outline" onClick={handleLogout} className="font-pixel border-4 border-black shadow-[4px_4px_0_0_#000] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[6px_6px_0_0_#000] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all rounded-none bg-white text-black hover:bg-zinc-200 h-12 px-6">
+            로그아웃
+          </Button>
         </header>
 
         {/* 내 고유 공유 주소 안내 */}
-        <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 flex items-center justify-between">
-          <div>
-            <p className="text-sm font-semibold text-primary">내 프로필 공유 주소</p>
-            <a href={`/${profile?.displayName || user.uid}`} target="_blank" rel="noopener noreferrer" className="text-xs text-primary/80 hover:underline">
+        <div className="bg-white border-4 border-black p-4 flex flex-col sm:flex-row items-center justify-between shadow-[8px_8px_0_0_#000] gap-4">
+          <div className="flex flex-col sm:flex-row items-center gap-2 text-center sm:text-left">
+            <p className="font-pixel text-lg font-bold text-black">내 프로필 공유 주소</p>
+            <a href={`/${profile?.displayName || user.uid}`} target="_blank" rel="noopener noreferrer" className="font-pixel text-sm sm:text-lg text-blue-600 hover:text-blue-800 hover:underline break-all px-2">
               {typeof window !== "undefined" ? window.location.origin : ""}/{profile?.displayName || user.uid}
             </a>
           </div>
           <Button variant="secondary" size="sm" onClick={() => {
             navigator.clipboard.writeText(`${window.location.origin}/${profile?.displayName || user.uid}`)
             alert("주소가 복사되었습니다!")
-          }}>
+          }} className="font-pixel border-4 border-black shadow-[4px_4px_0_0_#000] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[6px_6px_0_0_#000] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all rounded-none bg-[#0000FF] text-white hover:bg-blue-700 h-10 px-4 w-full sm:w-auto">
             복사하기
           </Button>
         </div>
@@ -185,8 +179,12 @@ export default function MyPage() {
 
         {/* 하단 : 링크 목록 */}
         <section>
-          <h2 className="text-xl font-bold mb-4 px-1">등록된 링크</h2>
-          <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl shadow-sm border border-border min-h-[300px]">
+          <div className="inline-block bg-white border-4 border-black shadow-[4px_4px_0_0_#000] mb-4">
+            <h2 className="font-pixel text-2xl font-bold px-4 py-2 text-black">
+              등록된 링크
+            </h2>
+          </div>
+          <div className="bg-[#FF00FF] p-6 border-8 border-black shadow-[12px_12px_0_0_#000] min-h-[300px]">
             <LinkList 
               links={links} 
               isAdmin={true} 
@@ -203,7 +201,6 @@ export default function MyPage() {
           initialData={editingLink} 
           onSave={handleEditSave} 
         />
-        
         
       </div>
     </main>
