@@ -79,28 +79,34 @@ export default function UserProfile() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-zinc-50 dark:bg-zinc-950 sm:py-12">
-      <div className="w-full max-w-[480px] min-h-[800px] bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-2xl overflow-hidden relative border-[8px] border-zinc-200 dark:border-zinc-800 flex flex-col">
+    <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-[#0000FF] sm:py-12 overflow-hidden relative">
+      {/* 8-bit 배경 패턴 */}
+      <div className="absolute inset-0 opacity-20 pointer-events-none" style={{
+        backgroundImage: 'linear-gradient(#000 2px, transparent 2px), linear-gradient(90deg, #000 2px, transparent 2px)',
+        backgroundSize: '32px 32px'
+      }} />
+
+      <div className="w-full max-w-[480px] min-h-[800px] bg-[#FFD700] rounded-none shadow-[12px_12px_0_0_#000] relative border-8 border-black flex flex-col z-10">
         
         {/* Profile Header */}
         <div className="flex flex-col items-center mt-12 px-6">
-          <div className="w-24 h-24 rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden mb-4 border-4 border-white dark:border-zinc-700 shadow-lg">
+          <div className="w-28 h-28 bg-white border-4 border-black shadow-[4px_4px_0_0_#000] mb-6 flex items-center justify-center overflow-hidden">
             <img 
-              src={`https://api.dicebear.com/9.x/notionists/svg?seed=${profileUid}`} 
+              src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${profileUid}`} 
               alt="Profile" 
               className="w-full h-full object-cover"
             />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-            @{uid ? uid.substring(0, 8) : "user"}
+          <h1 className="font-pixel text-4xl font-bold tracking-tight text-black" style={{ textShadow: '2px 2px 0px #FFF' }}>
+            @{uid ? uid : "user"}
           </h1>
-          <p className="text-zinc-500 dark:text-zinc-400 text-center mt-2 text-sm">
+          <p className="font-pixel text-black font-semibold text-center mt-4 text-lg bg-white border-2 border-black px-4 py-1 shadow-[2px_2px_0_0_#000]">
             My Link Profile
           </p>
         </div>
 
         {/* Links Section */}
-        <div className="flex-1 px-6 pb-24 overflow-y-auto mt-6 no-scrollbar">
+        <div className="flex-1 px-6 pb-24 overflow-y-auto mt-8 no-scrollbar">
           <LinkList links={links} />
         </div>
 
