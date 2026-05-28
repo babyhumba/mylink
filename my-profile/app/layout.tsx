@@ -7,6 +7,9 @@ import { AuthProvider } from "@/components/AuthProvider";
 export const metadata: Metadata = {
   title: "MyLink",
   description: "여러 개의 흩어진 링크를 단 하나의 직관적인 페이지로",
+  verification: {
+    google: "0Gz_rdXl_CWJKcccO1Snt4SEC2q0cbZzo7NSBsQJ7SQ",
+  },
 };
 
 export default function RootLayout({
